@@ -5,40 +5,19 @@
 RTClib myRTC;
 DS3231 Clock;
 
-//~~~~~Alarm times~~~~~
-#define closeHour 5
-#define alarmHour 8 //24hour time
-#define startMin 28
-#define endMin 30
-
-//~~~~~~Settings~~~~~~~
-#define resetTime 10
-#define contSteps false
-#define descStepNum 2
-
-
 //Configuration
 #define STP1 6
 #define STP2 7
 #define STP3 8
 #define STP4 9
-
 //Clk dat/clk 5&6
 #define RTCsqwpin 2
-
 #define bUp 10
 #define bCent 11
 #define bDwn 12
 //#define bMenu 
 //#define dispClk 
 //#define dispDat 
-
-
-//Global vars
-int Step = 0;
-
-
-
 
 
 void setup() 
@@ -58,8 +37,10 @@ void setup()
   Wire.begin();
 }
 
+//Function prototypes
 void updateTime();
 
+//Global vars
 int curHour=0, curMin=0, curSec=0;
 
 void loop() 
@@ -80,10 +61,13 @@ void loop()
   {
     //Check for a time update
     lastsqwstate = updateTime(lastsqwstate);
+
+
     
 
   }
 }
+
 
 //Functions
 
@@ -92,11 +76,11 @@ int updateTime(int lastsqwstate)
 {
   DateTime now = myRTC.now();
   int sqwstate = digitalRead(RTCsqwpin);
+  
   if (sqwstate != lastsqwstate) //Clock edge
   {
     if (sqwstate == HIGH) //High edge -> Next second
     {
-      
       curSec = now.second();
       lastsqwstate = sqwstate;
       
