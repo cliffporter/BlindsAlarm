@@ -1,7 +1,9 @@
 #include <Wire.h>
 #include <DS3231.h>
-#include <LittleFS.h>
+//#include <LittleFS.h>
 
+RTClib myRTC;
+DS3231 Clock;
 
 //~~~~~Alarm times~~~~~
 #define closeHour 5
@@ -20,21 +22,29 @@
 #define STP2 7
 #define STP3 8
 #define STP4 9
-//Clk d%clk 5&6
-#define clkSqw 
+
+//Clk dat/clk 5&6
+#define RTCsqwpin 2
+
 #define bUp 10
 #define bCent 11
 #define bDwn 12
+//#define bMenu 
+//#define dispClk 
+//#define dispDat 
+
 
 //Global vars
 int Step = 0;
 
 
-RTClib myRTC;
 
 
-void setup() {
+
+void setup() 
+{
   Serial.begin(9600);
+  
   pinMode(STP1, OUTPUT);
   pinMode(STP2, OUTPUT);
   pinMode(STP3, OUTPUT);
@@ -42,12 +52,66 @@ void setup() {
   pinMode(bUp, INPUT_PULLUP);
   pinMode(bDwn, INPUT_PULLUP);
   pinMode(bCent, INPUT_PULLUP);
-  Serial.write("Start\n");
+
+  pinMode(RTCsqwpin, INPUT);
+
   Wire.begin();
-  LittleFS.begin();
 }
 
-void loop() {
+void updateTime();
+
+int curHour=0, curMin=0, curSec=0;
+
+void loop() 
+{
   DateTime now = myRTC.now();
+
   
+  //Main setup
+  Clock.enable32kHz(1); //Second pulse
+  Clock.enableOscillator(true, false, 0);
+  int lastsqwstate = -1;
+  
+  Serial.print("Initialized\n");
+
+  
+  //Actual loop
+  while(1)
+  {
+    //Check for a time update
+    lastsqwstate = updateTime(lastsqwstate);
+    
+
+  }
+}
+
+//Functions
+
+//Wait for the second to tic over to prevent hammering the RTC
+int updateTime(int lastsqwstate)
+{
+  DateTime now = myRTC.now();
+  int sqwstate = digitalRead(RTCsqwpin);
+  if (sqwstate != lastsqwstate) //Clock edge
+  {
+    if (sqwstate == HIGH) //High edge -> Next second
+    {
+      
+      curSec = now.second();
+      lastsqwstate = sqwstate;
+      
+      Serial.print("Sec: "); //Drift log
+      Serial.print(curSec, DEC);
+      Serial.write("\n");
+    }
+    else //Low edge
+      lastsqwstate = sqwstate;
+  }
+
+  if(curSec==0)
+    curMin = now.minute();
+  if(curMin==0)
+    curHour = now.hour();
+
+  return sqwstate;
 }
